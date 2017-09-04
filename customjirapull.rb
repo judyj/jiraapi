@@ -15,6 +15,12 @@ jira_url = "https://simp-project.atlassian.net/rest/api/2/search?"
 
 #find current sprint
 filter = "jql=sprint%20in%20openSprints()"
+
+# set a max # results - defaults to 50 (we can switch this to a loop later)
+maxresults = 250
+filter = "#{filter}&maxResults=#{maxresults}"
+
+# call the code
 response = RestClient.get(jira_url+filter)
 if(response.code != 200)
   raise "Error with the http request!"
