@@ -1,16 +1,15 @@
-# jira_pull.rb 
-# this file pulls the jira tickets for the CURRENT sprint 
-# and writes the data to a comma-separated file
-# note that we get 2 files - one just has the tasks, 
-# the second _wparent appends the parent with a slash
-# so description on jirapull.csv is "task 1"
-# and on jirapull_wparent.csv is "parent/task 1"
+# this does a pull of the closed tickets 
+# one with parent/ one without
+# the query is closed <= 16d
+# (you may need to change it based on your sprint length - or just edit out what you don't need)
+# you generally have to de-dupe it with what's already in there anyhow
+#
 require 'rest-client'
 require 'json'
 
 # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
-pullfile = File.open("jirapull.csv", "w")
-parentpullfile = File.open("jirapull_wparent.csv", "w")
+pullfile = File.open("closedpull.csv", "w")
+parentpullfile = File.open("closedpull_wparent.csv", "w")
 pullfile.puts( "Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee")
 parentpullfile.puts("Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee")
 
@@ -19,7 +18,7 @@ project_key = "ABC"
 jira_url = "https://simp-project.atlassian.net/rest/api/2/search?"
 
 #find current sprint
-filter = "jql=sprint%20in%20openSprints()"
+filter = "jql=status%3dClosed%20and%20resolved%3e%2d16d"
 
 # set a max # results - defaults to 50 (we can switch this to a loop later)
 maxresults = 250
@@ -40,7 +39,6 @@ data['issues'].each do |issue|
   issuekey = issue['key']
   summary = issue['fields']['summary']
   desc = issue['fields']['description']
-  # substitute apostrophe for quote
   if (desc != nil)
     temp = desc.gsub("\"","\'")
     desc = temp
@@ -55,7 +53,7 @@ data['issues'].each do |issue|
 
   # calculate the sprint by breaking the "sprint=" out of the sprint attributes string 
   sprintdata = issue['fields']['customfield_10007']
-  if sprintdata != nil
+  if sprintdata.size > 0
     idstring = sprintdata[0]
     idstringname = idstring.slice(idstring.index('name='),idstring.size)
     comma=idstringname.index(',')-1
@@ -78,6 +76,13 @@ data['issues'].each do |issue|
     assignee = ""
   end
 
+  # get status
+  if issue['fields']['status'] != nil
+    status = issue['fields']['status']['name']
+  else
+    status = ""
+  end
+ 
   # write to files 
   pullfile.puts( "#{issuekey},#{parent},\"#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee}" )
   parentpullfile.puts( "#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee}" )
