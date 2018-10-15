@@ -16,7 +16,6 @@ filter = 'jql=sprint%20in%20openSprints()'
 total_issues = 1
 ticket_count = 0
 maxresults = 50
-newfilter = "#{filter}&maxResults=#{maxresults}&startAt=#{total_issues}"
 
 # while we have tickets still
 while ticket_count < total_issues
@@ -52,7 +51,7 @@ while ticket_count < total_issues
 
     # calculate the sprint by breaking the "sprint=" out of the sprint attributes string
     sprintdata = issue['fields']['customfield_10007']
-    if sprintdata.size > 0
+    if sprintdata != nil
       idstring = sprintdata[0]
       idstringname = idstring.slice(idstring.index('name='), idstring.size)
       comma = idstringname.index(',') - 1

@@ -2,7 +2,7 @@ require 'rest-client'
 require 'json'
 
 # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
-parentpullfile = File.open('closed_pull.csv', 'w')
+parentpullfile = File.open('closedpull.csv', 'w')
 parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee')
 
 # here is our jira instance
@@ -10,19 +10,19 @@ project_key = 'ABC'
 jira_url = 'https://simp-project.atlassian.net/rest/api/2/search?'
 
 # find current sprint
-filter = "jql=status%3dClosed%20and%20resolved%3e%2d14d"
+filter = "jql=resolved%3e%2d14d"
 
 # set a max # results - defaults to 50 (we can switch this to a loop later)
 total_issues = 1
 ticket_count = 0
 maxresults = 50
-newfilter = "#{filter}&maxResults=#{maxresults}&startAt=#{total_issues}"
 
 # while we have tickets still
 while ticket_count < total_issues
 
   # call the code
   newfilter = "#{filter}&maxResults=#{maxresults}&startAt=#{ticket_count}"
+  puts "#{jira_url}#{filter}&maxResults=#{maxresults}&startAt=#{ticket_count}"
   response = RestClient.get(jira_url + newfilter)
   raise 'Error with the http request!' if response.code != 200
 
@@ -52,7 +52,7 @@ while ticket_count < total_issues
 
     # calculate the sprint by breaking the "sprint=" out of the sprint attributes string
     sprintdata = issue['fields']['customfield_10007']
-    if sprintdata.size > 0
+    if sprintdata != nil
       idstring = sprintdata[0]
       idstringname = idstring.slice(idstring.index('name='), idstring.size)
       comma = idstringname.index(',') - 1
