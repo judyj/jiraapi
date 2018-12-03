@@ -1,10 +1,6 @@
 require 'rest-client'
 require 'json'
 
-# first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
-parentpullfile = File.open('jirapull.csv', 'w')
-parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee')
-
 # here is our jira instance
 project_key = 'ABC'
 jira_url = 'https://simp-project.atlassian.net/rest/api/2/search?'
@@ -74,8 +70,17 @@ while ticket_count < total_issues
                  ''
                end
 
+    # if this is the first output, then open the file with the sprintname and write the header
+    if (ticket_count == 0) then
+      # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
+      filesprint = sprintid.gsub(" ","_")
+      filesprint = filesprint.gsub("__","_")
+      pullfile =  "currentpull#{filesprint}.csv"
+      $parentpullfile = File.open(pullfile, 'w')
+      $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee')
+    end
     # write to files
-    parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee}")
+    $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee}")
     ticket_count = ticket_count + 1
 
   end # while there are still tickets

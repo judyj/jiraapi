@@ -1,20 +1,29 @@
 require 'rest-client'
 require 'json'
+require 'optparse'
 
-# set the date so we have a unique file
-timenow = Time.new
-pullfile = "closed_pull_#{timenow.year}-#{timenow.month}-#{timenow.day}.csv"
-
-# first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
-parentpullfile = File.open(pullfile, 'w')
-parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee')
+# set file name
+pullfile = 'jirapull.csv'
 
 # here is our jira instance
 project_key = 'ABC'
+sprintno = 83
 jira_url = 'https://simp-project.atlassian.net/rest/api/2/search?'
+optsparse = OptionParser.new do |opts|
+  opts.banner = "Usage: processgraph -s sitename [options]"
+  opts.on('-h', '--help', 'Help') do
+    puts opts
+    exit
+  end
+  opts.on('-s', '--sprint NUMBER', 'Sprint') do
+    |s| puts "sprint is #{s}"
+    sprintno = s.strip
+  end
+end
+optsparse.parse!
 
 # find current sprint
-filter = "jql=resolved%3e%2d14d"
+filter = "jql=sprint=#{sprintno}"
 
 # set a max # results - defaults to 50 (we can switch this to a loop later)
 total_issues = 1
@@ -26,7 +35,6 @@ while ticket_count < total_issues
 
   # call the code
   newfilter = "#{filter}&maxResults=#{maxresults}&startAt=#{ticket_count}"
-  # puts "#{jira_url}#{filter}&maxResults=#{maxresults}&startAt=#{ticket_count}"
   response = RestClient.get(jira_url + newfilter)
   raise 'Error with the http request!' if response.code != 200
 
@@ -79,8 +87,17 @@ while ticket_count < total_issues
                  ''
                end
 
+    # if this is the first output, then open the file with the sprintname and write the header
+    if (ticket_count == 0) then
+      # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
+      filesprint = sprintid.gsub(" ","_")
+      filesprint = filesprint.gsub("__","_")
+      pullfile =  "jirapull_#{filesprint}.csv"
+      $parentpullfile = File.open(pullfile, 'w')
+      $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee')
+    end
     # write to files
-    parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee}")
+    $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee}")
     ticket_count = ticket_count + 1
 
   end # while there are still tickets
