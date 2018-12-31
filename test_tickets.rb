@@ -5,10 +5,12 @@ require 'json'
 require 'optparse'
 
 # initialize
+@ticketid = ""
 inputfile = 'test.csv'
 json_file = 'jira_in.json'
+outputfile = 'test_tickets.csv'
 lines = 0
-userid = 'me@here.com:fffffffkFfffEff8ff9'
+userid = 'me@here.com:123456789012'
 resultfile = 'putresult.json'
 
 optsparse = OptionParser.new do |opts|
@@ -21,9 +23,16 @@ optsparse = OptionParser.new do |opts|
     |f| puts "input filename is #{f}"
     inputfile = f.strip
   end
+  opts.on('-s', '--sprint NUMBER', 'Input sprint number (Jira)') do
+    |f| puts "sprint is #{s}"
+    sprint = f.strip
+  end
 end
 optsparse.parse!
 
+# set up output file
+outfile = File.open(outputfile,'w')
+outfile.puts("Ticket, Component, Summary, Points, Description") 
 
 # set up input file
 CSV.foreach(inputfile) do |row|
@@ -34,14 +43,15 @@ CSV.foreach(inputfile) do |row|
   desc = 'description'
   type = 'Sub-task'
   points = 0
+  sprint = nil
 
   # get out the fields we need
   component = row[0]
   summary = row[1]
   el6 = row[2]
   el7 = row[3]
-  test = row[4]
   desc = row[5]
+  points = row[4]
 
   # concat the component with the summary
   if component != nil
@@ -63,16 +73,21 @@ CSV.foreach(inputfile) do |row|
     no_el_flag = true
   end
 
+  if points == nil then
+    points = 0
+  end
   tickets = "no"
   # loop for none, el6, el7 or both...
   while (tickets == "no")
+    mydesc = desc
     # concatenate the EL version if necessary
     if (el6_tic)
-      desc = "EL6-#{summary}"
+      mydesc = "EL6-#{desc}"
     end
     if (el7_tic and !el6_tic) 
-      desc = "EL7-#{summary}"
+      mydesc = "EL7-#{desc}"
     end
+
     if summary != nil
       summary = summary.gsub("\'","")
       summary = summary.gsub("\r","")
@@ -83,52 +98,49 @@ CSV.foreach(inputfile) do |row|
       summary = " "
     end
 
+    # description
+    if (mydesc != nil)
+      mydesc = mydesc.gsub("\'","")
+      mydesc = mydesc.gsub("\r","")
+      mydesc = mydesc.gsub("{","")
+      mydesc = mydesc.gsub("}","")
+      mydesc = mydesc.gsub("\"","")
+    else
+      mydesc = " "
+    end
+
     # if the summary field is too long, we gotta move it over to the description
     if (summary.size > 50)
       summary = summary[0..49]
-      desc = "#{summary}-#{desc}"
+      mydesc = "#{summary}-#{mydesc}"
     end
-
-    # description
-    if (desc != nil)
-      desc = desc.gsub("\'","")
-      desc = desc.gsub("\r","")
-      desc = desc.gsub("{","")
-      desc = desc.gsub("}","")
-      desc = desc.gsub("\"","")
-    else
-      desc = " "
-    end
-
-    # points = row[3]
-    points = '0'
-    puts "component = #{component}, summary= #{summary}, desc= #{desc}, points=#{points}, type=#{type}"
+    # check 
+    puts "component = #{component}, summary= #{summary}, desc= #{mydesc}, points=#{points}, type=#{type}"
 
     # set up output file
     json_line = 
-    "{\"fields\":{\"project\":{\"key\":\"SIMP\"},\"summary\",\"#{summary}\",\"points\",#{points},\"desc\",\"#{desc}\"}}"
+    "{\"fields\":{\"project\":{\"key\":\"SIMP\"},\"summary\",\"#{summary}\",\"points\",#{points},\"desc\",\"#{mydesc}\"}}"
     # here is our jira instance
     project_key = 'ABC'
-    jira_url = 'https://simp-project.atlassian.net/rest/api/2/issue/'
-    jira_line = "#{jira_url}#{json_line}"
-    puts jira_line
     page_url ="https://simp-project.atlassian.net/rest/api/3/issue"
     options = " --user #{userid} --header 'Accept: application/json' --header 'Content-type: application/json'"
-    data_fields = "--data '{\"fields\":{\"project\":{\"key\":\"SIMP\"},\"issuetype\":{\"name\":\"Story\"},\"customfield_10005\":#{points},\"summary\":\"#{summary}\",\"description\":{\"version\":1,\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"#{desc}\"}]}]}}}'"
+    data_fields = "--data '{\"fields\":{\"project\":{\"key\":\"SIMP\"},\"issuetype\":{\"name\":\"Story\"},\"components\":[{\"name\":\"#{component}\"}],\"customfield_10005\":#{points},\"summary\":\"#{summary}\",\"description\":{\"version\":1,\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"#{mydesc}\"}]}]}}}'"
     cmd = "curl -v --request POST --url '#{page_url}' #{options} #{data_fields} > #{resultfile}"
 
     # let us know the command (if it fails we can try it manually)    
     puts "cmd is #{cmd}"
     if (component != "Component")
-      # exit_val = system(cmd)
-      rtn_val = false
+      exit_val = true
+    #   exit_val = system(cmd)
       puts "the result is #{exit_val}"
       if (exit_val == true)
         File.open(resultfile).each do |row|
           jsonrow = JSON.parse(row)
           puts "Your ticket is #{jsonrow['id']}, ticket #{jsonrow['key']}"
+          @ticketid = jsonrow['key']
         end # line in file
       end # success
+      outfile.puts("#{@ticketid},#{component},#{summary},#{points},#{mydesc}") 
     else # not header
       puts 'header line'
     end    
@@ -141,5 +153,6 @@ CSV.foreach(inputfile) do |row|
     else
       tickets = "yes"
     end
+
   end # while
 end # done with file
