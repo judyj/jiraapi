@@ -7,7 +7,7 @@ pullfile = "closed_pull_#{timenow.year}-#{timenow.month}-#{timenow.day}.csv"
 
 # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
 parentpullfile = File.open(pullfile, 'w')
-parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee')
+parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version')
 
 # here is our jira instance
 project_key = 'ABC'
@@ -78,9 +78,16 @@ while ticket_count < total_issues
                else
                  ''
                end
+    # get fixver
+    if (issue['fields']['fixVersions'].length > 0) then
+      fixverstring = issue['fields']['fixVersions'][0]
+      fixver = fixverstring['name']
+    else
+      fixver = ''
+    end
 
     # write to files
-    parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee}")
+    parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver}")
     ticket_count = ticket_count + 1
 
   end # while there are still tickets

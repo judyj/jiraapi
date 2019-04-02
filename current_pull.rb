@@ -70,6 +70,14 @@ while ticket_count < total_issues
                  ''
                end
 
+    # get fixver
+    if (issue['fields']['fixVersions'].length > 0) then
+      fixverstring = issue['fields']['fixVersions'][0]
+      fixver = fixverstring['name']
+    else
+      fixver = ''
+    end
+ 
     # if this is the first output, then open the file with the sprintname and write the header
     if (ticket_count == 0) then
       # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
@@ -77,10 +85,10 @@ while ticket_count < total_issues
       filesprint = filesprint.gsub("__","_")
       pullfile =  "currentpull#{filesprint}.csv"
       $parentpullfile = File.open(pullfile, 'w')
-      $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee')
+      $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version')
     end
     # write to files
-    $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee}")
+    $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver}")
     ticket_count = ticket_count + 1
 
   end # while there are still tickets
