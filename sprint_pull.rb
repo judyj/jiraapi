@@ -7,10 +7,10 @@ pullfile = 'jirapull.csv'
 
 # here is our jira instance
 project_key = 'ABC'
-sprintno =90 
+sprintno =93 
 jira_url = 'https://simp-project.atlassian.net/rest/api/2/search?'
 optsparse = OptionParser.new do |opts|
-  opts.banner = "Usage: processgraph -s sitename [options]"
+  opts.banner = "Usage: processgraph -s sprint [options]"
   opts.on('-h', '--help', 'Help') do
     puts opts
     exit
@@ -35,6 +35,7 @@ while ticket_count < total_issues
 
   # call the code
   newfilter = "#{filter}&maxResults=#{maxresults}&startAt=#{ticket_count}"
+  puts "rest url is #{jira_url+newfilter}"
   response = RestClient.get(jira_url + newfilter)
   raise 'Error with the http request!' if response.code != 200
 

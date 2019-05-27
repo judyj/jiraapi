@@ -13,6 +13,12 @@ total_issues = 1
 ticket_count = 0
 maxresults = 50
 
+# set up file for comments
+commentfile =  "currentpull_comments.csv"
+$comment_file = File.open(commentfile, 'w')
+$comment_file.puts('Issue, Status, Time, Comment')
+
+
 # while we have tickets still
 while ticket_count < total_issues
 
@@ -71,6 +77,9 @@ while ticket_count < total_issues
                  ''
                end
 
+   # get status
+    status =  issue['fields']['status']['name']
+
     # get fixver
     if (issue['fields']['fixVersions'].length > 0) then
       fixverstring = issue['fields']['fixVersions'][0]
@@ -78,7 +87,38 @@ while ticket_count < total_issues
     else
       fixver = ''
     end
+
+
+    # see if we have at least one open PR
+    if (issue['fields']['customfield_10300'].length > 0) then
+      pr_stat = issue['fields']['customfield_10300'] 
+    else
+      pr_stat = ''
+    end
+    if pr_stat.include?("OPEN") then
+      puts "ticket #{issuekey} has at least one open PR"
+    end
  
+    # get comment
+    # puts "comment is #{issue['comment']}"
+    if (issue['comment'] != nil) then
+      comment = issue['comment'] 
+    else
+      comment = ''
+    end
+    comment_url = "https://simp-project.atlassian.net/rest/api/2/issue/#{issuekey}/comment"
+    comment_response = RestClient.get(comment_url)
+    comment_data = JSON.parse(comment_response.body)
+    if (comment_data['total'] > 0)
+      comment_data['comments'].each do |comment| 
+        temp = comment['body'].tr('"', "\'")
+        comment_text = temp
+        $comment_file.puts("#{issuekey}, #{status}, #{comment['updated']}, \"#{comment['body']}\"")
+      end
+    else
+      comment_text = ""
+    end
+
     # if this is the first output, then open the file with the sprintname and write the header
     if (ticket_count == 0) then
       # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
@@ -87,7 +127,8 @@ while ticket_count < total_issues
       pullfile =  "currentpull#{filesprint}.csv"
       $parentpullfile = File.open(pullfile, 'w')
       $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version')
-    end
+     end
+
     # write to files
     $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver}")
     ticket_count = ticket_count + 1
