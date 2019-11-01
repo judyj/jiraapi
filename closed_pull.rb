@@ -14,7 +14,7 @@ project_key = 'ABC'
 jira_url = 'https://simp-project.atlassian.net/rest/api/2/search?'
 
 # find current sprint
-filter = "jql=resolved%3e%2d14d"
+filter = "jql=resolved%3e%2d14d%20and%20status=closed"
 
 # set a max # results - defaults to 50 (we can switch this to a loop later)
 total_issues = 1
@@ -27,6 +27,7 @@ while ticket_count < total_issues
   # call the code
   newfilter = "#{filter}&maxResults=#{maxresults}&startAt=#{ticket_count}"
   # puts "#{jira_url}#{filter}&maxResults=#{maxresults}&startAt=#{ticket_count}"
+  puts "#{jira_url+newfilter}"
   response = RestClient.get(jira_url + newfilter)
   raise 'Error with the http request!' if response.code != 200
 
