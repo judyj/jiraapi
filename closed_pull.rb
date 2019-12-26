@@ -3,7 +3,7 @@ require 'json'
 
 # set the date so we have a unique file
 timenow = Time.new
-pullfile = "closed_pull_#{timenow.year}-#{timenow.month}-#{timenow.day}.csv"
+pullfile = "tix_closed_#{timenow.year}-#{timenow.month}-#{timenow.day}.csv"
 
 # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
 parentpullfile = File.open(pullfile, 'w')
