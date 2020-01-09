@@ -7,14 +7,14 @@ pullfile = "tix_closed_#{timenow.year}-#{timenow.month}-#{timenow.day}.csv"
 
 # first create two .csv files - one with the parent appended, the other without - ensure the field names are OK
 parentpullfile = File.open(pullfile, 'w')
-parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version')
+parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version, Component')
 
 # here is our jira instance
 project_key = 'ABC'
 jira_url = 'https://simp-project.atlassian.net/rest/api/2/search?'
 
 # find current sprint
-filter = "jql=resolved%3e%2d14d%20and%20status=closed"
+filter = "jql=resolved%3e%2d7d%20and%20status=closed"
 
 # set a max # results - defaults to 50 (we can switch this to a loop later)
 total_issues = 1
@@ -87,8 +87,16 @@ while ticket_count < total_issues
       fixver = ''
     end
 
+    # get component
+    if (issue['fields']['components'].length > 0) then
+      components = issue['fields']['components'][0]
+      component = components['name']
+    else
+      component = ''
+    end
+
     # write to files
-    parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver}")
+    parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver},#{component}")
     ticket_count = ticket_count + 1
 
   end # while there are still tickets

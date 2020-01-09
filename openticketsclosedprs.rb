@@ -14,12 +14,8 @@ ticket_count = 0
 maxresults = 50
 
 # set up file for comments
-commentfile =  "currentpull_comments.csv"
 pullfile =  "pull_requests.csv"
-$comment_file = File.open(commentfile, 'w')
 $pulls_file = File.open(pullfile, 'w')
-# $comment_file.puts('Issue, Status, Time, Comment')
-
 
 # while we have tickets still
 while ticket_count < total_issues
