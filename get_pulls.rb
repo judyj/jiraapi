@@ -4,11 +4,11 @@ require 'json'
 
 # fetch user information
 username = 'user'
-access_token = 'accesstoken'
-me = 'myname'
+access_token = 'myaccesstoken'
+me = 'myghid'
 
 # set up output file
-listfile =  "pull_requests.csv"
+listfile =  "all_pull_requests.csv"
 $list_file = File.open(listfile, 'w')
 $list_file.puts('Repo, PR owner, number, status')
 
@@ -33,8 +33,6 @@ auth_result = JSON.parse(RestClient.get('https://api.github.com/user',
 # check our rate limit
 rlcommand = "https://api.github.com/rate_limit"
 result = RestClient.get(rlcommand)
-puts "rate limit"
-puts result
 
 # puts "command is #{command}"
 
@@ -59,7 +57,7 @@ while done == false do
       pr_pages = start_pr_page
       per_pr_page = 50      
       while pr_done != true do
-        puts "running pr commend #{pcommand} page #{pr_pages} per_page #{per_pr_page}"
+        # puts "running pr command #{pcommand} page #{pr_pages} per_page #{per_pr_page}"
         pull_result = JSON.parse(RestClient.get("#{pcommand}",
              {:params => {:oauth_token => access_token, :per_page => per_pr_page, :page => pr_pages, :state => "all"} }))
         numpulls = pull_result.size

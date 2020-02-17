@@ -74,6 +74,15 @@ while ticket_count < total_issues
       sprintid = ''
     end
 
+    # get component
+    if (issue['fields']['components'].length > 0) then
+      components = issue['fields']['components'][0]
+      component = components['name']
+    else
+      component = ''
+    end
+    puts "component is #{component}"
+
     # get type
     issuetype = if !issue['fields']['issuetype'].nil?
                   issue['fields']['issuetype']['name']
@@ -103,10 +112,10 @@ while ticket_count < total_issues
       filesprint = filesprint.gsub("__","_")
       pullfile =  "jirapull_#{filesprint}.csv"
       $parentpullfile = File.open(pullfile, 'w')
-      $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version')
+      $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version, Component')
     end
     # write to files
-    $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver}")
+    $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver},#{component}")
     ticket_count = ticket_count + 1
 
   end # while there are still tickets

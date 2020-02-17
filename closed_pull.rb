@@ -14,9 +14,9 @@ project_key = 'ABC'
 jira_url = 'https://simp-project.atlassian.net/rest/api/2/search?'
 
 # find current sprint
-filter = "jql=resolved%3e%2d7d%20and%20status=closed"
+filter = "jql=resolved%3e%2d14d%20and%20status=closed"
 
-# set a max # results - defaults to 50 (we can switch this to a loop later)
+# set a max # results -
 total_issues = 1
 ticket_count = 0
 maxresults = 50
