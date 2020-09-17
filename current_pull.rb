@@ -50,9 +50,11 @@ while ticket_count < total_issues
     sprintdata = issue['fields']['customfield_10007']
     if sprintdata != nil
       idstring = sprintdata[0]
-      idstringname = idstring.slice(idstring.index('name='), idstring.size)
-      comma = idstringname.index(',') - 1
-      sprintid = idstringname[5..comma]
+      # idstringname = idstring.slice(idstring.index('name='), idstring.size)
+      # comma = idstringname.index(',') - 1
+      # sprintid = idstringname[5..comma]
+      sprintid = idstring['name']
+
     else
       sprintid = ''
     end
@@ -86,7 +88,7 @@ while ticket_count < total_issues
     else
       component = ''
     end
-    puts "component is #{component}"
+    # puts "component is #{component}"
  
     # if this is the first output, then open the file with the sprintname and write the header
     if (ticket_count == 0) then

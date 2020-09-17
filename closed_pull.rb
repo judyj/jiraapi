@@ -59,9 +59,11 @@ while ticket_count < total_issues
     sprintdata = issue['fields']['customfield_10007']
     if sprintdata != nil
       idstring = sprintdata[0]
-      idstringname = idstring.slice(idstring.index('name='), idstring.size)
-      comma = idstringname.index(',') - 1
-      sprintid = idstringname[5..comma]
+      # idstringname = idstring.slice(idstring.index('name='), idstring.size)
+      idstringname = idstring["name"]
+      # puts idstringname
+      # comma = idstringname.index(',') - 1
+      # sprintid = idstringname[5..comma]
     else
       sprintid = ''
     end
