@@ -12,6 +12,7 @@ inputfile = 'test.csv'
 outputfile = 'test_tickets.csv'
 lines = 0
 userid = 'me@here.com:123456789012'
+userid = 'judith.johnson@onyxpoint.com:Xfv75V5h0iz4iMj8h5Oz19D5'
 resultfile = 'putresult.json'
 sprint = nil
 
@@ -46,7 +47,8 @@ CSV.foreach(inputfile) do |col|
   lines += 1
   puts "\n\n\n\n*** lines: #{lines} col: #{col}"
   proj = 'SIMP'
-  type = 'Sub-task'
+  type = 'Story'
+#  type = 'Sub-task'
   points = 0
 
   # get out the fields we need
@@ -121,7 +123,10 @@ CSV.foreach(inputfile) do |col|
 
     # set up output line
     json_line =
-      "{\"fields\":{\"project\":{\"key\":\"SIMP\"},\"issuetype\":{\"name\":\"Story\"},\"components\":[{\"name\":\"#{component}\"}],  \"customfield_10005\":#{points},\"summary\":\"#{summ_os}\",\"description\":{\"version\":1,\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"#{mydesc}\"}]}]}}}"
+      "{\"fields\":{\"project\":{\"key\":\"SIMP\"},\"issuetype\":{\"name\":\"#{type}\"},  \"customfield_10005\":#{points},\"summary\":\"#{summ_os}\",\"description\":{\"version\":1,\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"#{mydesc}\"}]}]}}}"
+    if component != nil then
+       json_line = "#{json_line},\"components\":[{\"name\":\"#{component}\"}]"
+    end
 #      "{\"fields\":{\"project\":{\"key\":\"SIMP\"},\"summary\",\"#{summary}\",\"points\",#{points},\"desc\",\"#{mydesc}\"}}"
 
     # here is our jira instance
@@ -134,7 +139,7 @@ CSV.foreach(inputfile) do |col|
     # let us know the command (if it fails we can try it manually)
     puts "cmd is #{cmd}"
     exit_val = false
-    #     exit_val = system(cmd)
+    # exit_val = system(cmd)
     puts "the result is #{exit_val}"
     @ticketid = 'NONE'
     if exit_val == true
