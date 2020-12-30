@@ -22,12 +22,13 @@ def find_ticket(tikid)
   # puts " number of tix is #{@tickets.length}"
   if @tickets.length.positive?
     @tickets.each do |ticket_entry|
-      if ticket_entry['ticket_id'] == tikid
-        found = true
-        return ticket_entry['jira_id']
-      end # match
-    end # each site
-  end # more than one
+      tickno = ticket_entry['ticket_id']
+      next unless tickno == tikid
+      # if we found something, send it back
+      found = true
+      return ticket_entry['jira_id']
+    end
+  end
   return nil if found == false
 end
 
@@ -69,13 +70,12 @@ outfile.puts('Ticket, Summary, Description, Component, Points, Parent, Jira ID')
 cmdfile = File.open('commands.txt', 'w')
 
 # set up input file
-puts "inputfile is #{inputfile}"
-CSV.foreach(inputfile) do |col|
+CSV.foreach(inputfile, 'r:bom|utf-9') do |col|
   myticket = {}
 
   proj = 'SIMP'
   type = 'Story'
-   points = 0
+  points = 0
 
   # get out the fields we need
   ticket_id = col[0]
@@ -84,6 +84,8 @@ CSV.foreach(inputfile) do |col|
   component = col[3]
   blocker = col[4]
   points = col[5]
+  blocker_id = nil
+  parent_id = nil
 
   # in case we need to edit description
   mydesc = descr
@@ -95,6 +97,7 @@ CSV.foreach(inputfile) do |col|
   if ticket_id.include? '.'
     type = 'Sub-task'
     parent_id = ticket_id[0..ticket_id.index('.') - 1]
+    # puts "parent_id is #{parent_id}"
   else
     type = 'Story'
     parent_id = ''
@@ -139,37 +142,36 @@ CSV.foreach(inputfile) do |col|
     end
 
     # that last column does not exist, but just seeing if we had an O/S checked - if not, just do a ticket with no O/S
-    if (os == 11) && (foundone == false)
-      command_created = true
-    end
+    command_created = true if (os == 11) && (foundone == false)
 
-    if type == 'Story'
+   # if it is a subtask find its parent's id     
+   if type == 'Story'
       parentid = nil
       subtask = false
     else
-      # for now
       subtask = true
-      #      parentid = "TICKETFOR#{parent_id}"
       parentid = find_ticket(parent_id)
     end
- 
-    blockerid = find_ticket(blocker) unless blocker.nil?
+
+    # blockers later...
+    blocker_id = find_ticket(blocker)
 
     # skip header line!
-    command_created = true if component <=> "Component"
+    command_created = true if component == 'Component'
 
     # if we set up a command, let's do it
-    next unless command_created == true
-#    puts "component=#{component}, summary=#{summ_os}, desc=#{mydesc}, points=#{points}, type=#{type}"
+    next unless (command_created == true) && (component != 'Component')
+
+    #    puts "component=#{component}, summary=#{summ_os}, desc=#{mydesc}, points=#{points}, type=#{type}"
 
     # set up output line
     json_line = '{"fields":{"project":{"key":"SIMP"},'
     json_line += "\"issuetype\":{\"name\":\"#{type}\"},"
     json_line += "\"customfield_10005\":#{points},"
     json_line += "\"summary\":\"#{summ_os}\","
-    json_line += "\"description\":{\"version\":1,\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"#{mydesc}\"}]}]}"
+    json_line += "\"description\":{\"version\":1,\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"#{mydesc}\"}]}]},"
     json_line += "\"components\":[{\"name\":\"#{component}\"}]" unless component.nil?
-    json_line += "\"parent\":{\"key\":\"#{parent_id}\"}" if subtask == true
+    json_line += "\"parent\":{\"key\":\"#{parentid}\"}" if subtask == true
     json_line = "#{json_line}}}"
 
     # here is our jira instance
@@ -180,28 +182,30 @@ CSV.foreach(inputfile) do |col|
     cmd = "curl -v --request POST --url '#{page_url}' #{options} #{data_fields} > #{resultfile}"
 
     # save the command (if it fails we can try it manually)
-    cmdfile.puts "cmd is #{cmd}"
+    cmdfile.puts "#{cmd}\n\n"
     exit_val = false
     # exit_val = system(cmd)
-    puts "command result is #{exit_val}"
-    if exit_val == true
+     if exit_val == true
       File.open(resultfile).each do |row|
         jsonrow = JSON.parse(row)
         puts "Your ticket is #{jsonrow['id']}, ticket #{jsonrow['key']}"
         jira_id = jsonrow['key']
       end
     else
+      puts "command failed (check #{resultfile})"
       jira_id = "SIMP-#{ticket_id}"
     end
+    puts "jira_id is #{jira_id}"
 
     # save the parameters for later
     tickethash = {}
     tickethash['ticket_id'] = ticket_id
+    tickethash['type'] = type
     tickethash['summary'] = summ_os
     tickethash['descr'] = descr
     tickethash['component'] = component
     tickethash['blocker'] = blocker
-    tickethash['blocker_id'] = blocker
+    tickethash['blocker_id'] = blocker_id
     tickethash['points'] = points
     tickethash['jira_id'] = jira_id
     tickethash['parent'] = parentid
@@ -211,6 +215,7 @@ CSV.foreach(inputfile) do |col|
     # success
     outfile.puts("#{ticket_id},#{summ_os},#{mydesc},#{component},#{points},#{parentid},#{jira_id},")
   end
+  puts 'final tickets'
   @tickets.each do |tic|
     puts tic
   end
