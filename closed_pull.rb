@@ -1,5 +1,23 @@
 require 'rest-client'
 require 'json'
+require 'optparse'
+
+# default days to pull 
+days_back = 7
+
+# get the days backif they were input
+optsparse = OptionParser.new do |opts|
+  opts.banner = "Usage: closed_pull -d days [options]"
+  opts.on('-h', '--help', 'Help') do
+    puts opts
+    exit
+  end
+  opts.on('-d', '--days NUMBER', 'Days back') do
+    |s| puts "days is #{s}"
+    days_back = s.strip
+  end
+end
+optsparse.parse!
 
 # set the date so we have a unique file
 timenow = Time.new
@@ -14,8 +32,7 @@ project_key = 'ABC'
 jira_url = 'https://simp-project.atlassian.net/rest/api/2/search?'
 
 # find resolved within 7 days
-# filter = "jql=resolved%3e%2d14d%20and%20status=closed"
-filter = "jql=resolved%3e%2d7d%20and%20status=closed"
+filter = "jql=resolved%3e%2d#{days_back}d%20and%20status=closed"
 
 # set a max # results -
 total_issues = 1
