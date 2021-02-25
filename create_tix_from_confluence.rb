@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-# frozen_string_literal: true
 
 #####################################################
 #
@@ -39,6 +38,7 @@ outputfile = 'test_tickets.csv'
 lines = 0
 userid = 'me@here.com:123456789012'
 resultfile = 'putresult.json'
+allresultsfile = 'allresults.json'
 sprint = nil
 
 @tickets = Array.new { {} }
@@ -64,18 +64,23 @@ optsparse.parse!
 
 # set up output file
 outfile = File.open(outputfile, 'w')
-outfile.puts('Ticket, Summary, Description, Component, Points, Parent, Jira ID')
+outfile.puts('Ticket, Summary, Description, Component, Blocker, Points, Parent, Jira ID')
 
 # also write commands to a file in case it does not work, then we can try it mnaually to find the problem
 cmdfile = File.open('commands.txt', 'w')
 
 # set up input file
-CSV.foreach(inputfile, 'r:bom|utf-9') do |col|
+# CSV.foreach(inputfile, 'r:bom|utf-9') do |col|
+CSV.foreach(inputfile) do |col|
+# CSV.foreach(inputfile, 'r') do |col|
   myticket = {}
 
-  proj = 'SIMP'
+  # proj = 'SIMP'
+  proj = 'JJTEST'
   type = 'Story'
   points = 0
+
+puts col
 
   # get out the fields we need
   ticket_id = col[0]
@@ -165,37 +170,52 @@ CSV.foreach(inputfile, 'r:bom|utf-9') do |col|
     #    puts "component=#{component}, summary=#{summ_os}, desc=#{mydesc}, points=#{points}, type=#{type}"
 
     # set up output line
-    json_line = '{"fields":{"project":{"key":"SIMP"},'
-    json_line += "\"issuetype\":{\"name\":\"#{type}\"},"
-    json_line += "\"customfield_10005\":#{points},"
-    json_line += "\"summary\":\"#{summ_os}\","
-    json_line += "\"description\":{\"version\":1,\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"#{mydesc}\"}]}]},"
-    json_line += "\"components\":[{\"name\":\"#{component}\"}]" unless component.nil?
-    json_line += "\"parent\":{\"key\":\"#{parentid}\"}" if subtask == true
-    json_line = "#{json_line}}}"
+    json_line = "{\"fields\":{\"project\":{\"key\":\"#{proj}\"}"
+    json_line += ",\"issuetype\":{\"name\":\"#{type}\"}"
+    json_line += ",\"customfield_10005\":#{points}"
+    json_line += ",\"summary\":\"#{summ_os}\""
+    json_line += ",\"description\":{\"version\":1,\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"#{mydesc}\"}]}]}" unless mydesc.nil?
+    json_line += ",\"components\":[{\"name\":\"#{component}\"}]" unless component.nil?
+    json_line += ",\"parent\":{\"key\":\"#{parentid}\"}" if subtask == true
+    blocker_line = ",\"update\":{\"issuelinks\":[{\"add\":"
+    blocker_line += "{\"type\":{\"name\":\"Blocks\",\"inward\":\"is blocked by\",\"outward\":\"blocks\"},"
+    blocker_line += "\"outwardIssue\":{\"key\":\"#{blocker_id}\"}}}]" 
+    if blocker_id != nil
+      json_line = "#{json_line}}#{blocker_line}"
+    else
+     json_line = "#{json_line}}"
+    end
+    json_line += "}}"
 
     # here is our jira instance
     project_key = proj
+    jira_id = "#{proj}-#{ticket_id}"
     page_url = 'https://simp-project.atlassian.net/rest/api/3/issue'
     options = " --user #{userid} --header 'Accept: application/json' --header 'Content-type: application/json'"
     data_fields = "--data '#{json_line}'"
-    cmd = "curl -v --request POST --url '#{page_url}' #{options} #{data_fields} > #{resultfile}"
+    cmd = "curl -v --request POST --url '#{page_url}' #{options} #{data_fields} > #{resultfile}"    
 
     # save the command (if it fails we can try it manually)
     cmdfile.puts "#{cmd}\n\n"
     exit_val = false
-    # exit_val = system(cmd)
-     if exit_val == true
+    exit_val = system(cmd)
+    if exit_val == true
       File.open(resultfile).each do |row|
+        puts row
         jsonrow = JSON.parse(row)
-        puts "Your ticket is #{jsonrow['id']}, ticket #{jsonrow['key']}"
         jira_id = jsonrow['key']
-      end
+        puts "Your ticket is #{jsonrow['id']}, ticket #{jira_id}"
+     end
     else
       puts "command failed (check #{resultfile})"
-      jira_id = "SIMP-#{ticket_id}"
     end
     puts "jira_id is #{jira_id}"
+    
+    # append results file in case we need to look for fails
+    last_results = File.read(resultfile)    
+    File.open(allresultsfile,"a") do |handle|
+      handle.puts last_results
+    end
 
     # save the parameters for later
     tickethash = {}
@@ -213,7 +233,7 @@ CSV.foreach(inputfile, 'r:bom|utf-9') do |col|
     lines += 1
 
     # success
-    outfile.puts("#{ticket_id},#{summ_os},#{mydesc},#{component},#{points},#{parentid},#{jira_id},")
+    outfile.puts("#{ticket_id},\"#{summ_os}\",\"#{mydesc}\",#{component},#{blocker_id},#{points},#{parentid},#{jira_id},")
   end
   puts 'final tickets'
   @tickets.each do |tic|
