@@ -67,6 +67,11 @@ while ticket_count < total_issues
     points = points.to_i
     issuekey = issue['key']
     summary = issue['fields']['summary']
+    # substitute apostrophe for quote
+    unless summary.nil?
+      temp = summary.tr('"', "\'")
+      summary = temp
+    end
     desc = issue['fields']['description']
     # substitute apostrophe for quote
     unless desc.nil?
@@ -86,9 +91,6 @@ while ticket_count < total_issues
     sprintdata = issue['fields']['customfield_10007']
     if sprintdata != nil
       idstring = sprintdata[0]
-      # idstringname = idstring.slice(idstring.index('name='), idstring.size)
-      # comma = idstringname.index(',') - 1
-      # sprintid = idstringname[5..comma]
       sprintid = idstring['name']
 
     else
