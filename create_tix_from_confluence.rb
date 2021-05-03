@@ -72,16 +72,16 @@ cmdfile = File.open('commands.txt', 'w')
 # set up input file
 # CSV.foreach(inputfile, 'r:bom|utf-9') do |col|
 CSV.foreach(inputfile) do |col|
-# CSV.foreach(inputfile, 'r') do |col|
+  # just do some generic exception handling for anything that may be bad in this ticket
   myticket = {}
 
+  # initialize
   # proj = 'SIMP'
   proj = 'JJTEST'
   type = 'Story'
   points = 0
 
-puts col
-
+  begin
   # get out the fields we need
   ticket_id = col[0]
   summary = col[1]
@@ -99,18 +99,20 @@ puts col
   points = 0 if points.nil?
 
   # see if the ticket ID has "." - if so it is a sub-task, if not, it is a task
-  if ticket_id.include? '.'
-    type = 'Sub-task'
-    parent_id = ticket_id[0..ticket_id.index('.') - 1]
-    # puts "parent_id is #{parent_id}"
-  else
-    type = 'Story'
-    parent_id = ''
+  if ticket_id != nil
+    if ticket_id.include? '.'
+      type = 'Sub-task'
+      parent_id = ticket_id[0..ticket_id.index('.') - 1]
+      # puts "parent_id is #{parent_id}"
+    else
+      type = 'Story'
+      parent_id = ''
+    end
   end
   # puts "ID is #{ticket_id}, parent is #{parent_id}"
 
   # summary - clean out values that will mess up the string
-  summary = summary.gsub("\'", '')
+  summary = summary.gsub("\'", "'")
   summary = summary.gsub("\r", '')
   summary = summary.gsub('{', '')
   summary = summary.gsub('}', '')
@@ -179,7 +181,7 @@ puts col
     json_line += ",\"parent\":{\"key\":\"#{parentid}\"}" if subtask == true
     blocker_line = ",\"update\":{\"issuelinks\":[{\"add\":"
     blocker_line += "{\"type\":{\"name\":\"Blocks\",\"inward\":\"is blocked by\",\"outward\":\"blocks\"},"
-    blocker_line += "\"outwardIssue\":{\"key\":\"#{blocker_id}\"}}}]" 
+    blocker_line += "\"inwardIssue\":{\"key\":\"#{blocker_id}\"}}}]" 
     if blocker_id != nil
       json_line = "#{json_line}}#{blocker_line}"
     else
@@ -189,7 +191,7 @@ puts col
 
     # here is our jira instance
     project_key = proj
-    jira_id = "#{proj}-#{ticket_id}"
+    jira_id = "NOT#{proj}-#{ticket_id}"
     page_url = 'https://simp-project.atlassian.net/rest/api/3/issue'
     options = " --user #{userid} --header 'Accept: application/json' --header 'Content-type: application/json'"
     data_fields = "--data '#{json_line}'"
@@ -235,9 +237,12 @@ puts col
     # success
     outfile.puts("#{ticket_id},\"#{summ_os}\",\"#{mydesc}\",#{component},#{blocker_id},#{points},#{parentid},#{jira_id},")
   end
-  puts 'final tickets'
-  @tickets.each do |tic|
-    puts tic
-  end
+   rescue StandardError => err
+     puts ("#{err.message} error on record with id #{ticket_id} - skipping")
+   end
+end
+puts 'final tickets'
+@tickets.each do |tic|
+  puts tic
 end
 # while
