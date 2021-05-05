@@ -86,6 +86,9 @@ while ticket_count < total_issues
              else
                "#{issuekey}."
              end
+    # what is the status?
+    status = issue['fields']['status']['name']
+    # puts "status is #{status}"
 
     # calculate the sprint by breaking the "sprint=" out of the sprint attributes string
     sprintdata = issue['fields']['customfield_10007']
@@ -139,10 +142,10 @@ while ticket_count < total_issues
       end
       puts " new #{pullfile}"
       $parentpullfile = File.open(pullfile, 'w')
-      $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version, Component')
+      $parentpullfile.puts('Issue id,Parent id,Summary,Issue Type,Story Points,Sprint,Description,Assignee,Fix Version, Component, Status')
     end
     # write to files
-    $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver},#{component}")
+    $parentpullfile.puts("#{issuekey},#{parent},\"#{parent}/#{summary} (#{issuekey})\",#{issuetype},#{points},#{sprintid},\"#{desc}\",#{assignee},#{fixver},#{component},#{status}")
     ticket_count = ticket_count + 1
 
   end # while there are still tickets
@@ -150,6 +153,6 @@ while ticket_count < total_issues
 end
 
 # now that we are done, send the output file to the proper output directory
-finalpullfile = "#{outputdir}#{$parentpullfile}"
-puts " old #{$parentpullfile}, new: #{finalpullfile}"
+finalpullfile = "#{outputdir}#{pullfile}"
+puts " old: #{pullfile}, new: #{finalpullfile}"
 # FileUtils.cp($parentpullfile,finalpullfile)
